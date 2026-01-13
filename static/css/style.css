@@ -57,3 +57,51 @@ form button {
 form button:hover {
     background: #555;
 }
+
+/* Feed / Post / Reply styles */
+.feed {
+    max-width: 800px;
+    margin: 1.5rem auto;
+}
+
+.post {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 4px solid #4CAF50;
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.post .username { font-weight: 700; color: #333; text-decoration: none; }
+.post .content { margin: 0.5rem 0; color: #222; }
+.post .post-meta { color: #777; font-size: 0.85rem; }
+
+.actions, .reply-actions { display: flex; gap: 0.75rem; align-items: center; font-size: 0.95rem; color: #555; margin-top: 0.5rem; }
+
+.like-btn, .reply-like-btn, .reply-form button { padding: 6px 10px; border-radius: 5px; border: none; cursor: pointer; background: #1976d2; color: #fff; }
+.like-btn[disabled], .reply-like-btn[disabled] { opacity: 0.6; cursor: default; background: #888; }
+
+.replies { margin-top: 1rem; }
+.reply { background: #f9f9f9; padding: 0.75rem; margin: 0.5rem 0; border-radius: 6px; margin-left: 2rem; border-left: 3px solid #ccc; }
+.reply-header { font-weight: 600; margin-bottom: 0.25rem; }
+.reply-content { margin-bottom: 0.25rem; color: #222; }
+
+.reply-form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.reply-form input { flex: 1; padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; }
+.reply-form button { flex: 0; background: #4caf50; }
+
+.post p, .reply p { margin: 0.2rem 0; }
+
+@media (max-width:600px){
+    .feed { padding: 0 1rem; }
+    .post { padding: 0.75rem; }
+    .reply { margin-left: 1rem; }
+}

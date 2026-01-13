@@ -21,17 +21,22 @@
             <p><em>This is your profile.</em></p>
         {% endif %}
 
+        <div class="feed">
         <h3>Posts</h3>
         {% if posts and posts|length > 0 %}
             {% for post in posts %}
                 {% set viewer = current_user %}
                 {% set liked = (viewer and (viewer in post.get('liked_by', []))) %}
                 <div class="post" data-post-id="{{ post.id }}">
-                    <p>{{ post.content }}</p>
-                    <p>Posted by: <a href="/users/{{ post.username }}">{{ post.username }}</a></p>
-                    <p>Likes: <span class="likes-count" data-post-id="{{ post.id }}">{{ post.likes or 0 }}</span>
-                        <button class="like-btn" data-post-id="{{ post.id }}" data-liked="{{ 'true' if liked else 'false' }}" {% if view_only %}disabled{% endif %}>{{ 'Unlike' if liked else 'Like' }}</button>
-                    </p>
+                    <div class="post-header">
+                        <a class="username" href="/users/{{ post.username }}">{{ post.username }}</a>
+                        <div class="post-meta">Post ID: {{ post.id }}</div>
+                    </div>
+                    <div class="content">{{ post.content }}</div>
+                    <div class="actions">
+                        <div>Likes: <span class="likes-count" data-post-id="{{ post.id }}">{{ post.likes or 0 }}</span></div>
+                        <div><button class="like-btn" data-post-id="{{ post.id }}" data-liked="{{ 'true' if liked else 'false' }}" {% if view_only %}disabled{% endif %}>{{ 'Unlike' if liked else 'Like' }}</button></div>
+                    </div>
 
                     <!-- Replies -->
                     <div class="replies">
@@ -40,11 +45,14 @@
                             {% for reply in post.replies %}
                                 {% set rliked = (viewer and (viewer in reply.get('liked_by', []))) %}
                                 <div class="reply" data-reply-id="{{ reply.id }}">
-                                    <p>{{ reply.content }}</p>
-                                    <p>Posted by: <a href="/users/{{ reply.username }}">{{ reply.username }}</a></p>
-                                    <p>Likes: <span class="reply-likes-count" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}">{{ reply.likes or 0 }}</span>
-                                        <button class="reply-like-btn" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}" data-liked="{{ 'true' if rliked else 'false' }}" {% if view_only %}disabled{% endif %}>{{ 'Unlike' if rliked else 'Like' }}</button>
-                                    </p>
+                                    <div class="reply-header">
+                                        <a class="username" href="/users/{{ reply.username }}">{{ reply.username }}</a>
+                                    </div>
+                                    <div class="reply-content">{{ reply.content }}</div>
+                                    <div class="reply-actions">
+                                        <div>Likes: <span class="reply-likes-count" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}">{{ reply.likes or 0 }}</span></div>
+                                        <div><button class="reply-like-btn" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}" data-liked="{{ 'true' if rliked else 'false' }}" {% if view_only %}disabled{% endif %}>{{ 'Unlike' if rliked else 'Like' }}</button></div>
+                                    </div>
                                 </div>
                             {% endfor %}
                         {% else %}
@@ -65,6 +73,7 @@
         {% else %}
             <p>No posts yet.</p>
         {% endif %}
+        </div>
     </main>
 </body>
 </html>
