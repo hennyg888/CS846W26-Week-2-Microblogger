@@ -18,8 +18,25 @@
         <h2>Global Feed</h2>
         <!-- Display the logged-in username -->
         <p>Welcome, {{ username }}!</p>
+        
+        <!-- Add a form for creating posts -->
+        <form method="POST" action="/home">
+            <textarea name="content" maxlength="150" placeholder="What's on your mind?" required></textarea>
+            <button type="submit">Post</button>
+        </form>
+
+        <!-- Display posts -->
         <div id="posts-container">
-            <!-- Posts will be dynamically loaded here -->
+            {% for post in posts %}
+                <div class="post" data-post-id="{{ post.id }}">
+                    <p>{{ post.content }}</p>
+                    <p>Posted by: <a href="/users/{{ post.username }}">{{ post.username }}</a></p>
+                    {% set liked = (username in post.get('liked_by', [])) %}
+                    <p>Likes: <span class="likes-count" data-post-id="{{ post.id }}">{{ post.likes or 0 }}</span>
+                        <button class="like-btn" data-post-id="{{ post.id }}" data-liked="{{ 'true' if liked else 'false' }}">{{ 'Unlike' if liked else 'Like' }}</button>
+                    </p>
+                </div>
+            {% endfor %}
         </div>
     </main>
     <script src="/static/js/main.js"></script>

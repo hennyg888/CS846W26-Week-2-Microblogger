@@ -21,7 +21,7 @@ print("Server is starting...")
 
 # Serve the homepage
 @app.route('/')
-def home():
+def landing_page():
     return render_template('index.html')
 
 # Serve the login page
@@ -37,14 +37,55 @@ def register_page():
 # Serve the profile page
 @app.route('/profile')
 def profile_page():
-    return render_template('profile.html')
+    if 'username' not in session:
+        return redirect(url_for('landing_page'))
+    username = session['username']
+    current_user = session.get('username')
+    with lock, shelve.open(DB_FILE) as db:
+        posts = [post for post in db.get('posts', []) if post['username'] == username]
+    return render_template('profile.html', username=username, posts=posts, view_only=False, current_user=current_user)
 
 # Serve the home page
-@app.route('/home')
+@app.route('/home', methods=['GET', 'POST'])
 def home_page():
     if 'username' not in session:
-        return redirect(url_for('home'))
-    return render_template('home.html', username=session['username'])
+        return redirect(url_for('landing_page'))
+
+    if request.method == 'POST':
+        content = request.form.get('content')
+        if not content or len(content) > 150:
+            return render_template('home.html', username=session['username'], error="Post must be 150 characters or less.")
+
+        with lock, shelve.open(DB_FILE) as db:
+            posts = db.get('posts', [])
+            next_id = max([p.get('id', 0) for p in posts], default=0) + 1
+            post = {"id": next_id, "username": session['username'], "content": content, "likes": 0, "replies": [], "liked_by": []}
+            posts.insert(0, post)  # Add the post to the top for chronological order
+            db['posts'] = posts
+
+    with lock, shelve.open(DB_FILE) as db:
+        posts = db.get('posts', [])
+        # Normalize post schema for older posts (ensure id, likes, replies, liked_by)
+        updated = False
+        next_id = max([p.get('id', 0) for p in posts], default=0)
+        for p in posts:
+            if 'id' not in p:
+                next_id += 1
+                p['id'] = next_id
+                updated = True
+            if 'likes' not in p:
+                p['likes'] = 0
+                updated = True
+            if 'replies' not in p:
+                p['replies'] = []
+                updated = True
+            if 'liked_by' not in p:
+                p['liked_by'] = []
+                updated = True
+        if updated:
+            db['posts'] = posts
+
+    return render_template('home.html', username=session['username'], posts=posts) 
 
 # Register a new user
 @app.route('/auth/register', methods=['POST'])
@@ -105,8 +146,8 @@ def create_post():
             return jsonify({"error": "User does not exist"}), 404
 
         posts = db.get('posts', [])
-        post_id = len(posts) + 1
-        post = {"id": post_id, "username": username, "content": content, "likes": 0, "replies": []}
+        next_id = max([p.get('id', 0) for p in posts], default=0) + 1
+        post = {"id": next_id, "username": username, "content": content, "likes": 0, "replies": [], "liked_by": []}
         posts.append(post)
         db['posts'] = posts
 
@@ -124,13 +165,49 @@ def get_posts():
 @app.route('/posts/<int:post_id>/like', methods=['POST'])
 def like_post(post_id):
     print("Like post endpoint hit")  # Sanity test output
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session['username']
     with lock, shelve.open(DB_FILE) as db:
         posts = db.get('posts', [])
+        # Try to find by id using .get to avoid KeyError
         for post in posts:
-            if post['id'] == post_id:
-                post['likes'] += 1
+            if post.get('id') == post_id:
+                liked_by = post.get('liked_by', [])
+                if username in liked_by:
+                    return jsonify({"error": "Already liked"}), 400
+                liked_by.append(username)
+                post['liked_by'] = liked_by
+                post['likes'] = post.get('likes', 0) + 1
                 db['posts'] = posts
-                return jsonify({"message": "Post liked successfully"}), 200
+                return jsonify({"message": "Post liked successfully", "likes": post['likes'], "liked": True}), 200
+        # If no match, attempt to migrate old posts by assigning ids, then retry
+        updated = False
+        next_id = max([p.get('id', 0) for p in posts], default=0)
+        for p in posts:
+            if 'id' not in p:
+                next_id += 1
+                p['id'] = next_id
+                if 'likes' not in p:
+                    p['likes'] = 0
+                if 'replies' not in p:
+                    p['replies'] = []
+                if 'liked_by' not in p:
+                    p['liked_by'] = []
+                updated = True
+        if updated:
+            db['posts'] = posts
+            # retry
+            for post in posts:
+                if post.get('id') == post_id:
+                    liked_by = post.get('liked_by', [])
+                    if username in liked_by:
+                        return jsonify({"error": "Already liked"}), 400
+                    liked_by.append(username)
+                    post['liked_by'] = liked_by
+                    post['likes'] = post.get('likes', 0) + 1
+                    db['posts'] = posts
+                    return jsonify({"message": "Post liked successfully", "likes": post['likes'], "liked": True}), 200
         return jsonify({"error": "Post not found"}), 404
 
 # Reply to a post
@@ -154,26 +231,48 @@ def reply_to_post(post_id):
                 return jsonify({"message": "Reply added successfully"}), 200
         return jsonify({"error": "Post not found"}), 404
 
-# Fetch a user’s profile and posts
+# Fetch a user’s profile and posts (view-only)
 @app.route('/users/<username>', methods=['GET'])
 def get_user_profile(username):
     print("Get user profile endpoint hit")  # Sanity test output
+    current_user = session.get('username')
     with lock, shelve.open(DB_FILE) as db:
         users = db.get('users', {})
         user = users.get(username)
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return "User not found", 404
 
         user_posts = [post for post in db.get('posts', []) if post['username'] == username]
 
-    return jsonify({"user": user, "posts": user_posts}), 200
+    return render_template('profile.html', username=username, posts=user_posts, view_only=True, current_user=current_user)
 
 # Add a route for logging out
-@app.route('/auth/logout', methods=['GET'])
+@app.route('/logout', methods=['GET'])
 def logout():
     print("Logout endpoint hit")  # Sanity test output
     session.pop('username', None)
-    return redirect(url_for('home'))
+    return redirect(url_for('landing_page'))
+
+# Unlike a post
+@app.route('/posts/<int:post_id>/unlike', methods=['POST'])
+def unlike_post(post_id):
+    print("Unlike post endpoint hit")  # Sanity test output
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session['username']
+    with lock, shelve.open(DB_FILE) as db:
+        posts = db.get('posts', [])
+        for post in posts:
+            if post.get('id') == post_id:
+                liked_by = post.get('liked_by', [])
+                if username not in liked_by:
+                    return jsonify({"error": "Not liked"}), 400
+                liked_by.remove(username)
+                post['liked_by'] = liked_by
+                post['likes'] = max(post.get('likes', 1) - 1, 0)
+                db['posts'] = posts
+                return jsonify({"message": "Post unliked successfully", "likes": post['likes'], "liked": False}), 200
+        return jsonify({"error": "Post not found"}), 404
 
 # Run the app
 if __name__ == '__main__':

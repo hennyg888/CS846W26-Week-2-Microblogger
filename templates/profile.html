@@ -3,26 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Microblogger</title>
+    <title>Microblogger - Profile</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <header>
         <h1>Microblogger</h1>
         <nav>
-            <a href="/">Global Feed</a>
+            <a href="/home">Home</a>
+            <a href="/auth/logout">Logout</a>
         </nav>
     </header>
     <main>
         <h2>User Profile</h2>
-        <div id="user-details">
-            <!-- User details will be dynamically loaded here -->
-        </div>
-        <h3>Your Posts</h3>
-        <div id="user-posts">
-            <!-- User posts will be dynamically loaded here -->
-        </div>
+        <p>Username: {{ username }}</p>
+        {% if not view_only %}
+            <p><em>This is your profile.</em></p>
+        {% endif %}
+
+        <h3>Posts</h3>
+        {% if posts and posts|length > 0 %}
+            {% for post in posts %}
+                {% set viewer = current_user %}
+                {% set liked = (viewer and (viewer in post.get('liked_by', []))) %}
+                <div class="post" data-post-id="{{ post.id }}">
+                    <p>{{ post.content }}</p>
+                    <p>Posted by: <a href="/users/{{ post.username }}">{{ post.username }}</a></p>
+                    <p>Likes: <span class="likes-count" data-post-id="{{ post.id }}">{{ post.likes or 0 }}</span>
+                        <button class="like-btn" data-post-id="{{ post.id }}" data-liked="{{ 'true' if liked else 'false' }}">{{ 'Unlike' if liked else 'Like' }}</button>
+                    </p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No posts yet.</p>
+        {% endif %}
     </main>
-    <script src="/static/js/main.js"></script>
 </body>
 </html>
