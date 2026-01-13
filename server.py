@@ -60,7 +60,7 @@ def register():
         users[username] = {"password": password, "posts": []}
         db['users'] = users
 
-    return redirect(url_for('home'))
+    return redirect(url_for('home_page'))
 
 # Log in a user
 @app.route('/auth/login', methods=['POST'])
@@ -79,7 +79,7 @@ def login():
         if not user or user['password'] != password:
             return jsonify({"error": "Invalid credentials"}), 401
 
-    return redirect(url_for('home'))
+    return redirect(url_for('home_page'))
 
 # Create a new post
 @app.route('/posts', methods=['POST'])
@@ -160,6 +160,12 @@ def get_user_profile(username):
         user_posts = [post for post in db.get('posts', []) if post['username'] == username]
 
     return jsonify({"user": user, "posts": user_posts}), 200
+
+# Add a route for logging out
+@app.route('/auth/logout', methods=['GET'])
+def logout():
+    print("Logout endpoint hit")  # Sanity test output
+    return redirect(url_for('home'))
 
 # Run the app
 if __name__ == '__main__':

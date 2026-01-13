@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Microblogger</title>
+    <title>Microblogger - Home</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <header>
-        <h1>Welcome to Microblogger</h1>
+        <h1>Microblogger</h1>
         <nav>
-            <a href="/">Global Feed</a>
-            <a href="/login">Login</a>
-            <a href="/register">Register</a>
+            <a href="/profile">Profile</a>
+            <a href="/logout">Logout</a>
         </nav>
     </header>
     <main>
-        <h2>Home Page</h2>
-        <p>Welcome to Microblogger, your platform for sharing and connecting with others.</p>
+        <h2>Global Feed</h2>
+        <div id="posts-container">
+            <!-- Posts will be dynamically loaded here -->
+        </div>
     </main>
+    <script src="/static/js/main.js"></script>
 </body>
 </html>

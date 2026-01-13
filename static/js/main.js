@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.redirected) {
-                // Redirect to the global feed if the server sends a redirect
+                // Redirect to the new location if the server sends a redirect
                 window.location.href = response.url;
             } else {
                 const result = await response.json();
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.redirected) {
-                // Redirect to the global feed if the server sends a redirect
+                // Redirect to the new location if the server sends a redirect
                 window.location.href = response.url;
             } else {
                 const result = await response.json();
