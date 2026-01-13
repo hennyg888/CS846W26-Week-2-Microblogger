@@ -18,3 +18,5 @@ No follower graph (global feed only)
 Note that I want you to create requirements from the description above, generate code that has all the features, is of high quality, and is highly performant for the user.
 
 Started with chatgpt 4o but switched to Raptor mini with thinking.
+
+Run server locally with ./start_server.sh and then go to http://127.0.0.1:5000/
