@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import shelve
 import threading
 
@@ -10,6 +10,9 @@ lock = threading.Lock()
 
 # Shelve database file
 DB_FILE = 'data.db'
+
+# Set a secret key for session management
+app.secret_key = 'your_secret_key_here'  # Replace with a secure key
 
 # Sanity test print
 print("Server is starting...")
@@ -39,7 +42,9 @@ def profile_page():
 # Serve the home page
 @app.route('/home')
 def home_page():
-    return render_template('home.html')
+    if 'username' not in session:
+        return redirect(url_for('home'))
+    return render_template('home.html', username=session['username'])
 
 # Register a new user
 @app.route('/auth/register', methods=['POST'])
@@ -79,6 +84,8 @@ def login():
         if not user or user['password'] != password:
             return jsonify({"error": "Invalid credentials"}), 401
 
+    # Set session cookie
+    session['username'] = username
     return redirect(url_for('home_page'))
 
 # Create a new post
@@ -165,6 +172,7 @@ def get_user_profile(username):
 @app.route('/auth/logout', methods=['GET'])
 def logout():
     print("Logout endpoint hit")  # Sanity test output
+    session.pop('username', None)
     return redirect(url_for('home'))
 
 # Run the app
