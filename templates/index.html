@@ -10,8 +10,13 @@
     <header>
         <h1>Microblogger</h1>
         <nav>
-            <a href="/login">Login</a>
-            <a href="/register">Register</a>
+            {% if session.get('logged_in') %}
+                <a href="/profile">Profile</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
         </nav>
     </header>
     <main>

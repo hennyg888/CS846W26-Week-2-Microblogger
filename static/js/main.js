@@ -14,8 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ username, password })
             });
 
-            const result = await response.json();
-            alert(result.message || result.error);
+            if (response.redirected) {
+                // Redirect to the global feed if the server sends a redirect
+                window.location.href = response.url;
+            } else {
+                const result = await response.json();
+                alert(result.error || 'Login failed');
+            }
         });
     }
 
@@ -31,8 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ username, password })
             });
 
-            const result = await response.json();
-            alert(result.message || result.error);
+            if (response.redirected) {
+                // Redirect to the global feed if the server sends a redirect
+                window.location.href = response.url;
+            } else {
+                const result = await response.json();
+                alert(result.error || 'Registration failed');
+            }
         });
     }
 });

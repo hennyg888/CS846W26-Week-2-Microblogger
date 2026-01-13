@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 import shelve
 import threading
 
@@ -15,6 +15,31 @@ DB_FILE = 'data.db'
 print("Server is starting...")
 
 # API Routes
+
+# Serve the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Serve the login page
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+# Serve the register page
+@app.route('/register')
+def register_page():
+    return render_template('register.html')
+
+# Serve the profile page
+@app.route('/profile')
+def profile_page():
+    return render_template('profile.html')
+
+# Serve the home page
+@app.route('/home')
+def home_page():
+    return render_template('home.html')
 
 # Register a new user
 @app.route('/auth/register', methods=['POST'])
@@ -35,7 +60,7 @@ def register():
         users[username] = {"password": password, "posts": []}
         db['users'] = users
 
-    return jsonify({"message": "User registered successfully"}), 201
+    return redirect(url_for('home'))
 
 # Log in a user
 @app.route('/auth/login', methods=['POST'])
@@ -54,7 +79,7 @@ def login():
         if not user or user['password'] != password:
             return jsonify({"error": "Invalid credentials"}), 401
 
-    return jsonify({"message": "Login successful"}), 200
+    return redirect(url_for('home'))
 
 # Create a new post
 @app.route('/posts', methods=['POST'])
