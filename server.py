@@ -82,6 +82,18 @@ def home_page():
             if 'liked_by' not in p:
                 p['liked_by'] = []
                 updated = True
+            # Normalize replies
+            for idx, r in enumerate(p.get('replies', [])):
+                if 'id' not in r:
+                    # assign incremental reply ids per post starting from 1
+                    r['id'] = idx + 1
+                    updated = True
+                if 'likes' not in r:
+                    r['likes'] = 0
+                    updated = True
+                if 'liked_by' not in r:
+                    r['liked_by'] = []
+                    updated = True
         if updated:
             db['posts'] = posts
 
@@ -214,21 +226,27 @@ def like_post(post_id):
 @app.route('/posts/<int:post_id>/reply', methods=['POST'])
 def reply_to_post(post_id):
     print("Reply to post endpoint hit")  # Sanity test output
-    data = request.json
-    username = data.get('username')
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session['username']
+    # Accept JSON or form data
+    data = request.json or request.form
     content = data.get('content')
 
-    if not username or not content:
-        return jsonify({"error": "Username and content are required"}), 400
+    if not content or len(content) > 150:
+        return jsonify({"error": "Content required and must be 150 characters or less"}), 400
 
     with lock, shelve.open(DB_FILE) as db:
         posts = db.get('posts', [])
         for post in posts:
-            if post['id'] == post_id:
-                reply = {"username": username, "content": content}
-                post['replies'].append(reply)
+            if post.get('id') == post_id:
+                replies = post.get('replies', [])
+                next_rid = max([r.get('id', 0) for r in replies], default=0) + 1
+                reply = {"id": next_rid, "username": username, "content": content, "likes": 0, "liked_by": []}
+                replies.append(reply)
+                post['replies'] = replies
                 db['posts'] = posts
-                return jsonify({"message": "Reply added successfully"}), 200
+                return jsonify({"message": "Reply added successfully", "reply": reply}), 201
         return jsonify({"error": "Post not found"}), 404
 
 # Fetch a user’s profile and posts (view-only)
@@ -272,6 +290,54 @@ def unlike_post(post_id):
                 post['likes'] = max(post.get('likes', 1) - 1, 0)
                 db['posts'] = posts
                 return jsonify({"message": "Post unliked successfully", "likes": post['likes'], "liked": False}), 200
+        return jsonify({"error": "Post not found"}), 404
+
+# Like a reply
+@app.route('/posts/<int:post_id>/replies/<int:reply_id>/like', methods=['POST'])
+def like_reply(post_id, reply_id):
+    print("Like reply endpoint hit")
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session['username']
+    with lock, shelve.open(DB_FILE) as db:
+        posts = db.get('posts', [])
+        for post in posts:
+            if post.get('id') == post_id:
+                for reply in post.get('replies', []):
+                    if reply.get('id') == reply_id:
+                        liked_by = reply.get('liked_by', [])
+                        if username in liked_by:
+                            return jsonify({"error": "Already liked"}), 400
+                        liked_by.append(username)
+                        reply['liked_by'] = liked_by
+                        reply['likes'] = reply.get('likes', 0) + 1
+                        db['posts'] = posts
+                        return jsonify({"message": "Reply liked successfully", "likes": reply['likes'], "liked": True}), 200
+                return jsonify({"error": "Reply not found"}), 404
+        return jsonify({"error": "Post not found"}), 404
+
+# Unlike a reply
+@app.route('/posts/<int:post_id>/replies/<int:reply_id>/unlike', methods=['POST'])
+def unlike_reply(post_id, reply_id):
+    print("Unlike reply endpoint hit")
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session['username']
+    with lock, shelve.open(DB_FILE) as db:
+        posts = db.get('posts', [])
+        for post in posts:
+            if post.get('id') == post_id:
+                for reply in post.get('replies', []):
+                    if reply.get('id') == reply_id:
+                        liked_by = reply.get('liked_by', [])
+                        if username not in liked_by:
+                            return jsonify({"error": "Not liked"}), 400
+                        liked_by.remove(username)
+                        reply['liked_by'] = liked_by
+                        reply['likes'] = max(reply.get('likes', 1) - 1, 0)
+                        db['posts'] = posts
+                        return jsonify({"message": "Reply unliked successfully", "likes": reply['likes'], "liked": False}), 200
+                return jsonify({"error": "Reply not found"}), 404
         return jsonify({"error": "Post not found"}), 404
 
 # Run the app

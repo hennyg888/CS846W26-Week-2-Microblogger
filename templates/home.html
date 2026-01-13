@@ -35,6 +35,31 @@
                     <p>Likes: <span class="likes-count" data-post-id="{{ post.id }}">{{ post.likes or 0 }}</span>
                         <button class="like-btn" data-post-id="{{ post.id }}" data-liked="{{ 'true' if liked else 'false' }}">{{ 'Unlike' if liked else 'Like' }}</button>
                     </p>
+
+                    <!-- Replies -->
+                    <div class="replies">
+                        <h4>Replies</h4>
+                        {% if post.replies and post.replies|length > 0 %}
+                            {% for reply in post.replies %}
+                                {% set rliked = (username in reply.get('liked_by', [])) %}
+                                <div class="reply" data-reply-id="{{ reply.id }}">
+                                    <p>{{ reply.content }}</p>
+                                    <p>Posted by: <a href="/users/{{ reply.username }}">{{ reply.username }}</a></p>
+                                    <p>Likes: <span class="reply-likes-count" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}">{{ reply.likes or 0 }}</span>
+                                        <button class="reply-like-btn" data-post-id="{{ post.id }}" data-reply-id="{{ reply.id }}" data-liked="{{ 'true' if rliked else 'false' }}">{{ 'Unlike' if rliked else 'Like' }}</button>
+                                    </p>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No replies yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Reply form -->
+                    <form class="reply-form" data-post-id="{{ post.id }}">
+                        <input name="content" maxlength="150" placeholder="Add a reply..." required />
+                        <button type="submit">Reply</button>
+                    </form>
                 </div>
             {% endfor %}
         </div>
